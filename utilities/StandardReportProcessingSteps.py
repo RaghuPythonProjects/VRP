@@ -59,7 +59,7 @@ def run_standard_report_process_steps(filename: str, data: pd.DataFrame, unknown
             logger.info(f'process_region - new_file={new_file[idx]}, data={len(data[idx])}')
     
     data = process_and_record_data(new_file, data, count)
-    process_final_file(new_file, data)
+    
     process_final_file(new_file, data, processed_data_path, today_date_str, all_workstations)
 
     return unknown_regions, count
@@ -276,10 +276,6 @@ def process_final_file(new_file: list[list[str]], data: list[list[pd.DataFrame]]
                             logger.info(f"...finished processing {sheet_name}. Saved as {filename}")
                     else:
                         logger.error(f"...EMPTY DF SKIPPED {sheet_name}. Saved as {filename}")
-    except Exception as e:
-        logger.error(
-            f"Failed to create file Filename: {filename} \t Join: {os.path.join(processed_data_path, filename)}")
-
     except Exception as e:
         logger.error(
             f"Failed to create file Filename: {filename} \t Join: {os.path.join(processed_data_path, filename)}")
