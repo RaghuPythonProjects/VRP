@@ -22,6 +22,7 @@ def update_is_cisa_kev(data: pd.DataFrame, cisa_kev_df: pd.DataFrame) -> pd.Data
             if 'cveID' in cisa_kev_df.columns:
                 cisa_kev_df['cveID'] = cisa_kev_df['cveID'].str.upper()
                 data['CisaKev'] = data['Vulnerability CVE IDs'].isin(cisa_kev_df['cveID'])
+                data = data[data['CisaKev'] == True]
         except Exception as e:
             logger.error(f"An error occurred while comparing CVE IDs: {traceback.format_exc()}")
 
