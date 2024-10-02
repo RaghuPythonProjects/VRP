@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import numpy as np
 from utilities.logger_master import logger
+from openpyxl import Workbook
 
 
 def load_report_data(target_filename: str) -> pd.DataFrame:
@@ -58,25 +59,34 @@ def split_dataframe(data: pd.DataFrame, max_sheet_rows:int=1048000) -> list:
     sheet_list = [("Data" + str(i + 1) if i else "Data", df) for i, df in enumerate(chunked_df)]
     return sheet_list
 
-def publish_data_into_excel_file_with_sheets(excel_file_path:str, sheet_list: list[tuple[str, pd.DataFrame]]) -> None:
+def publish_data_into_excel_file_with_sheets(excel_file_path: str, sheet_list: list[tuple[str, pd.DataFrame]], chunk_size=100000) -> None:
     """
-    Write multiple sheets to an Excel file.
-
-    Args:
-        writer (pd.ExcelWriter): The Excel writer object to write sheets.
-        sheet_list (list): A list of tuples where each tuple contains a sheet name and dataframe.
+    Write multiple sheets to an Excel file in chunks to reduce memory usage.
     """
     filename = os.path.basename(excel_file_path)
-    logger.info("Building Excel file {}...".format(filename))
+    logger.info(f"Building Excel file {filename}...")
+
     try:
-        # Excel file will be created with static filename
-        with pd.ExcelWriter(excel_file_path) as writer:
+        with pd.ExcelWriter(excel_file_path, engine='openpyxl') as writer:
             for sheet_name, data in sheet_list:
-                logger.info(f"Adding sheet {sheet_name} (Count: {len(data.index)}) to file {filename}")
-                data.to_excel(writer, sheet_name=sheet_name, index=False)
-        logger.info("...finished building {}.\n".format(filename))
-    except:
-        logger.error("SKIPPING AS NO DATA {}.\n".format(filename))
+                logger.info(f"Adding sheet {sheet_name} (Total Count: {len(data.index)}) to file {filename}")
+                
+                # Write in chunks to avoid memory issues
+                num_chunks = (len(data) // chunk_size) + 1
+                
+                for i in range(num_chunks):
+                    start_row = i * chunk_size
+                    end_row = min(start_row + chunk_size, len(data))
+                    chunk = data.iloc[start_row:end_row]
+                    
+                    # If it's the first chunk, write the header, else skip the header
+                    chunk.to_excel(writer, sheet_name=sheet_name, index=False, header=(i == 0), startrow=start_row)
+                    
+                    logger.info(f"Chunk {i+1}/{num_chunks} of sheet {sheet_name} written to {filename}")
+
+        logger.info(f"...finished building {filename}.\n")
+    except Exception as e:
+        logger.error(f"Error while building {filename}: {str(e)}")
 
 
 def check_if_file_is_valid(target_filename):
